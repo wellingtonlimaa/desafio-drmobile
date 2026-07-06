@@ -1,0 +1,669 @@
+{
+	"info": {
+		"name": "API de Clientes",
+		"description": "Collection do desafio técnico — CRUD de clientes.\n\nComo usar:\n1. Ajuste a variável {{baseUrl}} se necessário (padrão: http://localhost:3000);\n2. Execute a collection na ordem (Run collection).\n\nO primeiro cenário gera um CPF válido aleatório e um e-mail único a cada execução (pre-request script), salva o clienteId criado e os demais cenários reutilizam essas variáveis — a collection pode ser executada várias vezes seguidas sem conflito de dados.\n\nTodos os cenários validam automaticamente o código de status, o formato da resposta e as mensagens de erro.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"variable": [
+		{ "key": "baseUrl", "value": "http://localhost:3000" },
+		{ "key": "clienteId", "value": "" },
+		{ "key": "cpfValido", "value": "" },
+		{ "key": "cpfSecundario", "value": "" },
+		{ "key": "emailValido", "value": "" }
+	],
+	"item": [
+		{
+			"name": "01 - Cadastro de cliente válido",
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"// gera um CPF matematicamente válido para cada execução da collection",
+							"function gerarCpfValido() {",
+							"    let n;",
+							"    do {",
+							"        n = Array.from({ length: 9 }, () => Math.floor(Math.random() * 10));",
+							"    } while (n.every((d) => d === n[0]));",
+							"    let d1 = 0;",
+							"    for (let i = 0; i < 9; i++) d1 += n[i] * (10 - i);",
+							"    d1 = 11 - (d1 % 11);",
+							"    if (d1 >= 10) d1 = 0;",
+							"    n.push(d1);",
+							"    let d2 = 0;",
+							"    for (let i = 0; i < 10; i++) d2 += n[i] * (11 - i);",
+							"    d2 = 11 - (d2 % 11);",
+							"    if (d2 >= 10) d2 = 0;",
+							"    n.push(d2);",
+							"    return n.join('');",
+							"}",
+							"const agora = Date.now();",
+							"pm.collectionVariables.set('cpfValido', gerarCpfValido());",
+							"pm.collectionVariables.set('cpfSecundario', gerarCpfValido());",
+							"pm.collectionVariables.set('emailValido', `cliente.${agora}@email.com`);"
+						]
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('Status deve ser 201', function () {",
+							"    pm.response.to.have.status(201);",
+							"});",
+							"const response = pm.response.json();",
+							"pm.test('Resposta contém _id, createdAt e updatedAt', function () {",
+							"    pm.expect(response).to.have.property('_id');",
+							"    pm.expect(response).to.have.property('createdAt');",
+							"    pm.expect(response).to.have.property('updatedAt');",
+							"});",
+							"pm.test('CPF salvo somente com números', function () {",
+							"    pm.expect(response.cpf).to.match(/^\\d{11}$/);",
+							"});",
+							"pm.test('E-mail salvo em minúsculas', function () {",
+							"    pm.expect(response.email).to.eql(response.email.toLowerCase());",
+							"});",
+							"pm.test('Telefone salvo somente com números', function () {",
+							"    pm.expect(response.telefone).to.match(/^\\d{10,13}$/);",
+							"});",
+							"pm.test('Estado salvo em maiúsculas', function () {",
+							"    pm.expect(response.endereco.estado).to.eql('SP');",
+							"});",
+							"pm.test('Campo ativo tem padrão true', function () {",
+							"    pm.expect(response.ativo).to.be.true;",
+							"});",
+							"pm.collectionVariables.set('clienteId', response._id);"
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [{ "key": "Content-Type", "value": "application/json" }],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"nome\": \"João da Silva\",\n  \"cpf\": \"{{cpfValido}}\",\n  \"email\": \"{{emailValido}}\",\n  \"telefone\": \"(11) 99999-9999\",\n  \"dataNascimento\": \"1995-05-10\",\n  \"endereco\": {\n    \"cep\": \"01001-000\",\n    \"logradouro\": \"Praça da Sé\",\n    \"numero\": \"100\",\n    \"complemento\": \"Apartamento 10\",\n    \"bairro\": \"Sé\",\n    \"cidade\": \"São Paulo\",\n    \"estado\": \"sp\"\n  }\n}",
+					"options": { "raw": { "language": "json" } }
+				},
+				"url": {
+					"raw": "{{baseUrl}}/clientes",
+					"host": ["{{baseUrl}}"],
+					"path": ["clientes"]
+				}
+			}
+		},
+		{
+			"name": "02 - Cadastro com CPF inválido",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('Status deve ser 400', function () {",
+							"    pm.response.to.have.status(400);",
+							"});",
+							"const response = pm.response.json();",
+							"pm.test('Erro padronizado VALIDATION_ERROR', function () {",
+							"    pm.expect(response.error).to.eql('VALIDATION_ERROR');",
+							"    pm.expect(response).to.have.property('message');",
+							"});",
+							"pm.test('Detalhes apontam o campo cpf', function () {",
+							"    const campos = response.details.map((d) => d.field);",
+							"    pm.expect(campos).to.include('cpf');",
+							"});"
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [{ "key": "Content-Type", "value": "application/json" }],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"nome\": \"Cliente CPF Inválido\",\n  \"cpf\": \"123.456.789-00\",\n  \"email\": \"cpf.invalido@email.com\",\n  \"telefone\": \"(11) 99999-9999\",\n  \"dataNascimento\": \"1995-05-10\",\n  \"endereco\": {\n    \"cep\": \"01001-000\",\n    \"logradouro\": \"Praça da Sé\",\n    \"numero\": \"100\",\n    \"bairro\": \"Sé\",\n    \"cidade\": \"São Paulo\",\n    \"estado\": \"SP\"\n  }\n}",
+					"options": { "raw": { "language": "json" } }
+				},
+				"url": {
+					"raw": "{{baseUrl}}/clientes",
+					"host": ["{{baseUrl}}"],
+					"path": ["clientes"]
+				}
+			}
+		},
+		{
+			"name": "03 - Cadastro com CPF duplicado",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('Status deve ser 409', function () {",
+							"    pm.response.to.have.status(409);",
+							"});",
+							"const response = pm.response.json();",
+							"pm.test('Erro padronizado CPF_ALREADY_EXISTS', function () {",
+							"    pm.expect(response.error).to.eql('CPF_ALREADY_EXISTS');",
+							"    pm.expect(response.message).to.include('CPF');",
+							"});"
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [{ "key": "Content-Type", "value": "application/json" }],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"nome\": \"Cliente CPF Duplicado\",\n  \"cpf\": \"{{cpfValido}}\",\n  \"email\": \"cpf.duplicado.{{$timestamp}}@email.com\",\n  \"telefone\": \"(11) 98888-7777\",\n  \"dataNascimento\": \"1990-01-01\",\n  \"endereco\": {\n    \"cep\": \"01001-000\",\n    \"logradouro\": \"Praça da Sé\",\n    \"numero\": \"200\",\n    \"bairro\": \"Sé\",\n    \"cidade\": \"São Paulo\",\n    \"estado\": \"SP\"\n  }\n}",
+					"options": { "raw": { "language": "json" } }
+				},
+				"url": {
+					"raw": "{{baseUrl}}/clientes",
+					"host": ["{{baseUrl}}"],
+					"path": ["clientes"]
+				}
+			}
+		},
+		{
+			"name": "04 - Cadastro com e-mail inválido",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('Status deve ser 400', function () {",
+							"    pm.response.to.have.status(400);",
+							"});",
+							"const response = pm.response.json();",
+							"pm.test('Erro padronizado VALIDATION_ERROR', function () {",
+							"    pm.expect(response.error).to.eql('VALIDATION_ERROR');",
+							"});",
+							"pm.test('Detalhes apontam o campo email', function () {",
+							"    const campos = response.details.map((d) => d.field);",
+							"    pm.expect(campos).to.include('email');",
+							"});"
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [{ "key": "Content-Type", "value": "application/json" }],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"nome\": \"Cliente E-mail Inválido\",\n  \"cpf\": \"{{cpfSecundario}}\",\n  \"email\": \"email-invalido\",\n  \"telefone\": \"(11) 98888-7777\",\n  \"dataNascimento\": \"1990-01-01\",\n  \"endereco\": {\n    \"cep\": \"01001-000\",\n    \"logradouro\": \"Praça da Sé\",\n    \"numero\": \"200\",\n    \"bairro\": \"Sé\",\n    \"cidade\": \"São Paulo\",\n    \"estado\": \"SP\"\n  }\n}",
+					"options": { "raw": { "language": "json" } }
+				},
+				"url": {
+					"raw": "{{baseUrl}}/clientes",
+					"host": ["{{baseUrl}}"],
+					"path": ["clientes"]
+				}
+			}
+		},
+		{
+			"name": "05 - Cadastro com e-mail duplicado",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('Status deve ser 409', function () {",
+							"    pm.response.to.have.status(409);",
+							"});",
+							"const response = pm.response.json();",
+							"pm.test('Erro padronizado EMAIL_ALREADY_EXISTS', function () {",
+							"    pm.expect(response.error).to.eql('EMAIL_ALREADY_EXISTS');",
+							"    pm.expect(response.message).to.include('e-mail');",
+							"});"
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [{ "key": "Content-Type", "value": "application/json" }],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"nome\": \"Cliente E-mail Duplicado\",\n  \"cpf\": \"{{cpfSecundario}}\",\n  \"email\": \"{{emailValido}}\",\n  \"telefone\": \"(11) 98888-7777\",\n  \"dataNascimento\": \"1990-01-01\",\n  \"endereco\": {\n    \"cep\": \"01001-000\",\n    \"logradouro\": \"Praça da Sé\",\n    \"numero\": \"200\",\n    \"bairro\": \"Sé\",\n    \"cidade\": \"São Paulo\",\n    \"estado\": \"SP\"\n  }\n}",
+					"options": { "raw": { "language": "json" } }
+				},
+				"url": {
+					"raw": "{{baseUrl}}/clientes",
+					"host": ["{{baseUrl}}"],
+					"path": ["clientes"]
+				}
+			}
+		},
+		{
+			"name": "06 - Cadastro de cliente menor de 18 anos",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('Status deve ser 400', function () {",
+							"    pm.response.to.have.status(400);",
+							"});",
+							"const response = pm.response.json();",
+							"pm.test('Erro padronizado VALIDATION_ERROR', function () {",
+							"    pm.expect(response.error).to.eql('VALIDATION_ERROR');",
+							"});",
+							"pm.test('Mensagem indica idade mínima de 18 anos', function () {",
+							"    const mensagens = response.details.map((d) => d.message).join(' ');",
+							"    pm.expect(mensagens).to.include('18');",
+							"});"
+						]
+					}
+				},
+				{
+					"listen": "prerequest",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"// data de nascimento de alguém com ~10 anos, calculada dinamicamente",
+							"const data = new Date();",
+							"data.setFullYear(data.getFullYear() - 10);",
+							"pm.collectionVariables.set('dataMenorDeIdade', data.toISOString().slice(0, 10));"
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [{ "key": "Content-Type", "value": "application/json" }],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"nome\": \"Cliente Menor de Idade\",\n  \"cpf\": \"111.444.777-35\",\n  \"email\": \"menor.idade@email.com\",\n  \"telefone\": \"(11) 98888-7777\",\n  \"dataNascimento\": \"{{dataMenorDeIdade}}\",\n  \"endereco\": {\n    \"cep\": \"01001-000\",\n    \"logradouro\": \"Praça da Sé\",\n    \"numero\": \"200\",\n    \"bairro\": \"Sé\",\n    \"cidade\": \"São Paulo\",\n    \"estado\": \"SP\"\n  }\n}",
+					"options": { "raw": { "language": "json" } }
+				},
+				"url": {
+					"raw": "{{baseUrl}}/clientes",
+					"host": ["{{baseUrl}}"],
+					"path": ["clientes"]
+				}
+			}
+		},
+		{
+			"name": "07 - Cadastro com data de nascimento futura",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('Status deve ser 400', function () {",
+							"    pm.response.to.have.status(400);",
+							"});",
+							"const response = pm.response.json();",
+							"pm.test('Erro padronizado VALIDATION_ERROR', function () {",
+							"    pm.expect(response.error).to.eql('VALIDATION_ERROR');",
+							"});",
+							"pm.test('Detalhes apontam o campo dataNascimento', function () {",
+							"    const campos = response.details.map((d) => d.field);",
+							"    pm.expect(campos).to.include('dataNascimento');",
+							"});"
+						]
+					}
+				},
+				{
+					"listen": "prerequest",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"// data um ano no futuro, calculada dinamicamente",
+							"const data = new Date();",
+							"data.setFullYear(data.getFullYear() + 1);",
+							"pm.collectionVariables.set('dataFutura', data.toISOString().slice(0, 10));"
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [{ "key": "Content-Type", "value": "application/json" }],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"nome\": \"Cliente do Futuro\",\n  \"cpf\": \"111.444.777-35\",\n  \"email\": \"futuro@email.com\",\n  \"telefone\": \"(11) 98888-7777\",\n  \"dataNascimento\": \"{{dataFutura}}\",\n  \"endereco\": {\n    \"cep\": \"01001-000\",\n    \"logradouro\": \"Praça da Sé\",\n    \"numero\": \"200\",\n    \"bairro\": \"Sé\",\n    \"cidade\": \"São Paulo\",\n    \"estado\": \"SP\"\n  }\n}",
+					"options": { "raw": { "language": "json" } }
+				},
+				"url": {
+					"raw": "{{baseUrl}}/clientes",
+					"host": ["{{baseUrl}}"],
+					"path": ["clientes"]
+				}
+			}
+		},
+		{
+			"name": "08 - Listagem de clientes",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('Status deve ser 200', function () {",
+							"    pm.response.to.have.status(200);",
+							"});",
+							"const response = pm.response.json();",
+							"pm.test('Resposta possui envelope de paginação', function () {",
+							"    pm.expect(response).to.have.property('page');",
+							"    pm.expect(response).to.have.property('limit');",
+							"    pm.expect(response).to.have.property('total');",
+							"    pm.expect(response).to.have.property('totalPages');",
+							"    pm.expect(response.data).to.be.an('array');",
+							"});"
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{baseUrl}}/clientes",
+					"host": ["{{baseUrl}}"],
+					"path": ["clientes"]
+				}
+			}
+		},
+		{
+			"name": "09 - Listagem com paginação",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('Status deve ser 200', function () {",
+							"    pm.response.to.have.status(200);",
+							"});",
+							"const response = pm.response.json();",
+							"pm.test('Paginação aplicada (page=1, limit=5)', function () {",
+							"    pm.expect(response.page).to.eql(1);",
+							"    pm.expect(response.limit).to.eql(5);",
+							"    pm.expect(response.data.length).to.be.at.most(5);",
+							"});"
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{baseUrl}}/clientes?page=1&limit=5",
+					"host": ["{{baseUrl}}"],
+					"path": ["clientes"],
+					"query": [
+						{ "key": "page", "value": "1" },
+						{ "key": "limit", "value": "5" }
+					]
+				}
+			}
+		},
+		{
+			"name": "10 - Listagem por status",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('Status deve ser 200', function () {",
+							"    pm.response.to.have.status(200);",
+							"});",
+							"const response = pm.response.json();",
+							"pm.test('Todos os clientes retornados estão ativos', function () {",
+							"    response.data.forEach((cliente) => {",
+							"        pm.expect(cliente.ativo).to.be.true;",
+							"    });",
+							"});"
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{baseUrl}}/clientes?ativo=true",
+					"host": ["{{baseUrl}}"],
+					"path": ["clientes"],
+					"query": [{ "key": "ativo", "value": "true" }]
+				}
+			}
+		},
+		{
+			"name": "11 - Consulta de cliente por ID",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('Status deve ser 200', function () {",
+							"    pm.response.to.have.status(200);",
+							"});",
+							"const response = pm.response.json();",
+							"pm.test('Retorna o cliente criado no cenário 01', function () {",
+							"    pm.expect(response._id).to.eql(pm.collectionVariables.get('clienteId'));",
+							"    pm.expect(response.cpf).to.eql(pm.collectionVariables.get('cpfValido'));",
+							"});"
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{baseUrl}}/clientes/{{clienteId}}",
+					"host": ["{{baseUrl}}"],
+					"path": ["clientes", "{{clienteId}}"]
+				}
+			}
+		},
+		{
+			"name": "12 - Consulta de cliente inexistente",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('Status deve ser 404', function () {",
+							"    pm.response.to.have.status(404);",
+							"});",
+							"const response = pm.response.json();",
+							"pm.test('Erro padronizado CUSTOMER_NOT_FOUND', function () {",
+							"    pm.expect(response.error).to.eql('CUSTOMER_NOT_FOUND');",
+							"    pm.expect(response.message).to.include('não encontrado');",
+							"});"
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{baseUrl}}/clientes/000000000000000000000000",
+					"host": ["{{baseUrl}}"],
+					"path": ["clientes", "000000000000000000000000"]
+				}
+			}
+		},
+		{
+			"name": "13 - Atualização de nome",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('Status deve ser 200', function () {",
+							"    pm.response.to.have.status(200);",
+							"});",
+							"const response = pm.response.json();",
+							"pm.test('Nome foi atualizado', function () {",
+							"    pm.expect(response.nome).to.eql('João Atualizado');",
+							"});",
+							"pm.test('CPF permaneceu o mesmo', function () {",
+							"    pm.expect(response.cpf).to.eql(pm.collectionVariables.get('cpfValido'));",
+							"});"
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "PUT",
+				"header": [{ "key": "Content-Type", "value": "application/json" }],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"nome\": \"João Atualizado\"\n}",
+					"options": { "raw": { "language": "json" } }
+				},
+				"url": {
+					"raw": "{{baseUrl}}/clientes/{{clienteId}}",
+					"host": ["{{baseUrl}}"],
+					"path": ["clientes", "{{clienteId}}"]
+				}
+			}
+		},
+		{
+			"name": "14 - Atualização de e-mail",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('Status deve ser 200', function () {",
+							"    pm.response.to.have.status(200);",
+							"});",
+							"const response = pm.response.json();",
+							"pm.test('E-mail foi atualizado e salvo em minúsculas', function () {",
+							"    pm.expect(response.email).to.include('atualizado.');",
+							"    pm.expect(response.email).to.eql(response.email.toLowerCase());",
+							"});"
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "PUT",
+				"header": [{ "key": "Content-Type", "value": "application/json" }],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"email\": \"ATUALIZADO.{{$timestamp}}@EMAIL.COM\"\n}",
+					"options": { "raw": { "language": "json" } }
+				},
+				"url": {
+					"raw": "{{baseUrl}}/clientes/{{clienteId}}",
+					"host": ["{{baseUrl}}"],
+					"path": ["clientes", "{{clienteId}}"]
+				}
+			}
+		},
+		{
+			"name": "15 - Tentativa de alteração do CPF",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('Status deve ser 400', function () {",
+							"    pm.response.to.have.status(400);",
+							"});",
+							"const response = pm.response.json();",
+							"pm.test('Erro padronizado CPF_INVALID_UPDATE', function () {",
+							"    pm.expect(response.error).to.eql('CPF_INVALID_UPDATE');",
+							"    pm.expect(response.message).to.eql('O CPF do cliente não pode ser alterado.');",
+							"});"
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "PUT",
+				"header": [{ "key": "Content-Type", "value": "application/json" }],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"cpf\": \"111.444.777-35\"\n}",
+					"options": { "raw": { "language": "json" } }
+				},
+				"url": {
+					"raw": "{{baseUrl}}/clientes/{{clienteId}}",
+					"host": ["{{baseUrl}}"],
+					"path": ["clientes", "{{clienteId}}"]
+				}
+			}
+		},
+		{
+			"name": "16 - Exclusão de cliente",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('Status deve ser 204', function () {",
+							"    pm.response.to.have.status(204);",
+							"});",
+							"pm.test('Resposta sem corpo', function () {",
+							"    pm.expect(pm.response.text()).to.be.empty;",
+							"});"
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "DELETE",
+				"header": [],
+				"url": {
+					"raw": "{{baseUrl}}/clientes/{{clienteId}}",
+					"host": ["{{baseUrl}}"],
+					"path": ["clientes", "{{clienteId}}"]
+				}
+			}
+		},
+		{
+			"name": "17 - Tentativa de exclusão de cliente inexistente",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							"pm.test('Status deve ser 404', function () {",
+							"    pm.response.to.have.status(404);",
+							"});",
+							"const response = pm.response.json();",
+							"pm.test('Erro padronizado CUSTOMER_NOT_FOUND', function () {",
+							"    pm.expect(response.error).to.eql('CUSTOMER_NOT_FOUND');",
+							"});"
+						]
+					}
+				}
+			],
+			"request": {
+				"method": "DELETE",
+				"header": [],
+				"url": {
+					"raw": "{{baseUrl}}/clientes/{{clienteId}}",
+					"host": ["{{baseUrl}}"],
+					"path": ["clientes", "{{clienteId}}"]
+				}
+			}
+		}
+	]
+}
