@@ -43,8 +43,6 @@ npm run build   # compila o TypeScript para dist/
 npm start       # executa a versão compilada
 ```
 
-A API sobe em `http://localhost:3000`.
-
 ## Execução com Docker
 
 O projeto inclui um `Dockerfile` (build multi-stage: compila o TypeScript e gera uma imagem final enxuta, só com as dependências de produção) e um `docker-compose.yml` que já expõe a porta e injeta as variáveis de ambiente.
@@ -56,7 +54,7 @@ Pré-requisitos: **Docker** e **Docker Compose** instalados, e o arquivo `.env` 
 docker compose up --build      # constrói a imagem e sobe o container
 ```
 
-A API fica disponível em `http://localhost:3000` (e a documentação em `http://localhost:3000/docs`).
+A API fica disponível em `https://desafio-drmobile-production.up.railway.app` (e a documentação em `https://desafio-drmobile-production.up.railway.app/docs`).
 
 Outros comandos úteis:
 
@@ -84,7 +82,7 @@ docker compose -f docker-compose-production.yml down
 
 ## Documentação interativa (Swagger)
 
-Com a API rodando, acesse **`http://localhost:3000/docs`**: a página lista todos os endpoints com parâmetros, corpos de exemplo e todas as respostas possíveis (sucesso e erro), e permite executar as requisições direto do navegador ("Try it out"). O contrato OpenAPI 3 em JSON fica disponível em `/docs.json`, para importação em outras ferramentas. A especificação é mantida em `src/docs/openapi.ts`.
+Com a API rodando, acesse **`https://desafio-drmobile-production.up.railway.app/docs`**: a página lista todos os endpoints com parâmetros, corpos de exemplo e todas as respostas possíveis (sucesso e erro), e permite executar as requisições direto do navegador ("Try it out"). O contrato OpenAPI 3 em JSON fica disponível em `/docs.json`, para importação em outras ferramentas. A especificação é mantida em `src/docs/openapi.ts`.
 
 ## Endpoints
 
@@ -224,7 +222,7 @@ Todas as respostas de erro saem do middleware central no formato:
 A pasta [postman/](postman/) contém a collection `clientes-api.postman_collection.json`, pronta para importar no Postman:
 
 1. Importe o arquivo no Postman;
-2. A variável `{{baseUrl}}` já vem definida como `http://localhost:3000` (ajuste se necessário);
+2. A variável `{{baseUrl}}` já vem definida como `https://desafio-drmobile-production.up.railway.app` (ajuste se necessário);
 3. Execute a collection na ordem (Run collection): os cenários geram um CPF válido aleatório a cada execução, salvam o `clienteId` criado e validam automaticamente status, formato da resposta e mensagens de erro com `pm.test`.
 
 Cenários cobertos: cadastro válido, CPF/e-mail inválidos e duplicados, menor de 18 anos, data futura, listagem com paginação e filtros, consulta por ID (existente e inexistente), atualização de nome e e-mail, tentativa de alteração de CPF e exclusão (existente e inexistente).
