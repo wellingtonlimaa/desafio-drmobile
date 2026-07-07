@@ -10,7 +10,7 @@ export const openApiDocument = {
             'Aceita CPF, telefone e CEP com ou sem máscara e salva os dados normalizados. ' +
             'Todas as respostas de erro seguem o formato `{ error, message, details? }`.',
     },
-    servers: [{ url: 'http://localhost:3000', description: 'Ambiente local' }],
+    servers: [{ url: '/', description: 'Ambiente local' }],
     tags: [{ name: 'Clientes', description: 'CRUD de clientes' }],
     paths: {
         '/clientes': {
