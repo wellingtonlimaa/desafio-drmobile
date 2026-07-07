@@ -12,7 +12,7 @@ app.get('/', (req: Request, res: Response) => {
     res.json({ mensagem: 'API de Clientes rodando 🚀' });
 });
 
-app.use('/clientes', customerRoutes); // ativa as rotas de clientes
+app.use('/clientes', customerRoutes); // ativa as rotas de clientes 
 
 // documentação interativa (Swagger UI) e o contrato OpenAPI em JSON
 app.use('/docs', swaggerUi.serve, swaggerUi.setup(openApiDocument));
