@@ -1,4 +1,5 @@
 import { NextFunction, Request, Response } from 'express';
+import httpStatus from 'http-status';
 import mongoose from 'mongoose';
 import { AppError } from '../errors/AppError';
 
@@ -21,7 +22,7 @@ export const errorHandler = (error: unknown, req: Request, res: Response, next: 
 
     // corpo da requisição com JSON malformado
     if (error instanceof SyntaxError && 'body' in error) {
-        res.status(400).json({
+        res.status(httpStatus.BAD_REQUEST).json({
             error: 'INVALID_JSON',
             message: 'O corpo da requisição não é um JSON válido.',
         });
@@ -30,7 +31,7 @@ export const errorHandler = (error: unknown, req: Request, res: Response, next: 
 
     // erros de validação do Mongoose (campos obrigatórios, formatos, regras de negócio do schema)
     if (error instanceof mongoose.Error.ValidationError) {
-        res.status(400).json({
+        res.status(httpStatus.BAD_REQUEST).json({
             error: 'VALIDATION_ERROR',
             message: 'Existem campos inválidos na requisição.',
             details: Object.values(error.errors).map((detalhe) => ({
@@ -43,7 +44,7 @@ export const errorHandler = (error: unknown, req: Request, res: Response, next: 
 
     // id com formato inválido para ObjectId
     if (error instanceof mongoose.Error.CastError) {
-        res.status(400).json({
+        res.status(httpStatus.BAD_REQUEST).json({
             error: 'INVALID_ID',
             message: 'O identificador informado não é válido.',
         });
@@ -57,13 +58,13 @@ export const errorHandler = (error: unknown, req: Request, res: Response, next: 
             code: 'DUPLICATE_VALUE',
             message: `Já existe um cliente com este valor de ${campo}.`,
         };
-        res.status(409).json({ error: duplicado.code, message: duplicado.message });
+        res.status(httpStatus.CONFLICT).json({ error: duplicado.code, message: duplicado.message });
         return;
     }
 
     // qualquer outro erro: loga internamente e nunca expõe detalhes ao consumidor da API
     console.error('Erro não tratado:', error);
-    res.status(500).json({
+    res.status(httpStatus.INTERNAL_SERVER_ERROR).json({
         error: 'INTERNAL_SERVER_ERROR',
         message: 'Ocorreu um erro interno ao processar a solicitação.',
     });

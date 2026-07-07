@@ -1,4 +1,5 @@
 import express, { Request, Response } from 'express';
+import httpStatus from 'http-status';
 import swaggerUi from 'swagger-ui-express';
 import customerRoutes from './routes/customerRoutes';
 import { errorHandler } from './middlewares/errorHandler';
@@ -22,7 +23,7 @@ app.get('/docs.json', (req: Request, res: Response) => {
 
 // rotas não mapeadas
 app.use((req: Request, res: Response) => {
-    res.status(404).json({ error: 'ROUTE_NOT_FOUND', message: 'Rota não encontrada.' });
+    res.status(httpStatus.NOT_FOUND).json({ error: 'ROUTE_NOT_FOUND', message: 'Rota não encontrada.' });
 });
 
 // middleware central de erros — precisa ser o último registrado

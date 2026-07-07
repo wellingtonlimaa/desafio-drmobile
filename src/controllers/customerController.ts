@@ -1,4 +1,5 @@
 import { Request, Response } from 'express';
+import httpStatus from 'http-status';
 import * as customerService from '../services/customerService';
 
 // No Express 5, promessas rejeitadas em handlers async são encaminhadas
@@ -24,29 +25,29 @@ const extrairParametrosDeListagem = (req: Request) => {
 // CREATE - Cadastrar cliente
 export const createCustomer = async (req: Request, res: Response): Promise<void> => {
     const cliente = await customerService.criarCliente(req.body);
-    res.status(201).json(cliente);
+    res.status(httpStatus.CREATED).json(cliente);
 };
 
 // READ - Consultar todos os clientes (com paginação e filtros)
 export const listCustomer = async (req: Request, res: Response): Promise<void> => {
     const resultado = await customerService.listarClientes(extrairParametrosDeListagem(req));
-    res.status(200).json(resultado);
+    res.status(httpStatus.OK).json(resultado);
 };
 
 // READ - Consultar cliente específico
 export const getCustomer = async (req: Request<{ id: string }>, res: Response): Promise<void> => {
     const cliente = await customerService.buscarClientePorId(req.params.id);
-    res.status(200).json(cliente);
+    res.status(httpStatus.OK).json(cliente);
 };
 
 // UPDATE - Atualizar os dados de um cliente
 export const updateCustomer = async (req: Request<{ id: string }>, res: Response): Promise<void> => {
     const cliente = await customerService.atualizarCliente(req.params.id, req.body);
-    res.status(200).json(cliente);
+    res.status(httpStatus.OK).json(cliente);
 };
 
 // DELETE - Excluir um cliente (exclusão física)
 export const deleteCustomer = async (req: Request<{ id: string }>, res: Response): Promise<void> => {
     await customerService.excluirCliente(req.params.id);
-    res.status(204).send();
+    res.status(httpStatus.NO_CONTENT).send();
 };
