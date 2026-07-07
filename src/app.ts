@@ -1,6 +1,8 @@
 import express, { Request, Response } from 'express';
+import swaggerUi from 'swagger-ui-express';
 import customerRoutes from './routes/customerRoutes';
 import { errorHandler } from './middlewares/errorHandler';
+import { openApiDocument } from './docs/openapi';
 
 const app = express();
 
@@ -11,6 +13,12 @@ app.get('/', (req: Request, res: Response) => {
 });
 
 app.use('/clientes', customerRoutes); // ativa as rotas de clientes
+
+// documentação interativa (Swagger UI) e o contrato OpenAPI em JSON
+app.use('/docs', swaggerUi.serve, swaggerUi.setup(openApiDocument));
+app.get('/docs.json', (req: Request, res: Response) => {
+    res.json(openApiDocument);
+});
 
 // rotas não mapeadas
 app.use((req: Request, res: Response) => {

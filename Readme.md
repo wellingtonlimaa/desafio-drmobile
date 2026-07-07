@@ -9,6 +9,7 @@ API REST para cadastro e gerenciamento de clientes, com CRUD completo, validaç�
 - **MongoDB Atlas** + **Mongoose 9** — banco de dados e ODM (validações e normalizações no schema)
 - **dotenv** — carregamento de variáveis de ambiente
 - **tsx** — execução do TypeScript em desenvolvimento com recarga automática (equivalente ao nodemon, sem etapa de build)
+- **swagger-ui-express** — documentação interativa dos endpoints (OpenAPI 3) em `/docs`
 
 ## Requisitos
 
@@ -43,6 +44,10 @@ npm start       # executa a versão compilada
 ```
 
 A API sobe em `http://localhost:3000`.
+
+## Documentação interativa (Swagger)
+
+Com a API rodando, acesse **`http://localhost:3000/docs`**: a página lista todos os endpoints com parâmetros, corpos de exemplo e todas as respostas possíveis (sucesso e erro), e permite executar as requisições direto do navegador ("Try it out"). O contrato OpenAPI 3 em JSON fica disponível em `/docs.json`, para importação em outras ferramentas. A especificação é mantida em `src/docs/openapi.ts`.
 
 ## Endpoints
 
@@ -199,7 +204,6 @@ Cenários cobertos: cadastro válido, CPF/e-mail inválidos e duplicados, menor 
 ### Melhorias futuras
 
 - Testes automatizados (Jest + Supertest);
-- Documentação OpenAPI/Swagger;
 - Docker e Docker Compose;
 - ESLint + Prettier + Husky;
 - Logs estruturados (pino);
