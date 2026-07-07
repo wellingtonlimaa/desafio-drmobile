@@ -45,6 +45,43 @@ npm start       # executa a versão compilada
 
 A API sobe em `http://localhost:3000`.
 
+## Execução com Docker
+
+O projeto inclui um `Dockerfile` (build multi-stage: compila o TypeScript e gera uma imagem final enxuta, só com as dependências de produção) e um `docker-compose.yml` que já expõe a porta e injeta as variáveis de ambiente.
+
+Pré-requisitos: **Docker** e **Docker Compose** instalados, e o arquivo `.env` preenchido (o Compose lê o `MONGODB_URI` e o `PORT` dele via `env_file`; o `.env` nunca entra na imagem).
+
+
+```bash
+docker compose up --build      # constrói a imagem e sobe o container
+```
+
+A API fica disponível em `http://localhost:3000` (e a documentação em `http://localhost:3000/docs`).
+
+Outros comandos úteis:
+
+```bash
+docker compose up -d --build   # sobe em segundo plano (detached)
+docker compose logs -f         # acompanha os logs
+docker compose down            # para e remove o container
+```
+
+> Como o banco é o MongoDB Atlas (na nuvem), não há um serviço de banco no Compose — basta a `MONGODB_URI` no `.env`.
+
+### Execução em produção (imagem publicada)
+
+Para rodar sem buildar nada, o `docker-compose-production.yml` usa a imagem já publicada no Docker Hub (`wellingtonlimaa/desafio-drmobile:1.0.0`), baixando-a automaticamente. É a forma mais rápida de subir a aplicação — só precisa do `.env` preenchido.
+
+```bash
+docker compose -f docker-compose-production.yml up -d
+```
+
+Para parar:
+
+```bash
+docker compose -f docker-compose-production.yml down
+```
+
 ## Documentação interativa (Swagger)
 
 Com a API rodando, acesse **`http://localhost:3000/docs`**: a página lista todos os endpoints com parâmetros, corpos de exemplo e todas as respostas possíveis (sucesso e erro), e permite executar as requisições direto do navegador ("Try it out"). O contrato OpenAPI 3 em JSON fica disponível em `/docs.json`, para importação em outras ferramentas. A especificação é mantida em `src/docs/openapi.ts`.
@@ -204,7 +241,6 @@ Cenários cobertos: cadastro válido, CPF/e-mail inválidos e duplicados, menor 
 ### Melhorias futuras
 
 - Testes automatizados (Jest + Supertest);
-- Docker e Docker Compose;
 - ESLint + Prettier + Husky;
 - Logs estruturados (pino);
 - Soft delete como padrão de exclusão.
